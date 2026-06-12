@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>J.A.R.V.I.S API — CyberSameer</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{
+      --bg:#0a0a0f;
+      --card:#111118;
+      --border:#1e1e2e;
+      --accent:#00d4ff;
+      --accent2:#7c3aed;
+      --green:#00ff88;
+      --text:#e2e8f0;
+      --muted:#64748b;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
+
+    /* --- ANIMATED BG --- */
+    body::before{
+      content:'';position:fixed;inset:0;
+      background:radial-gradient(ellipse 80% 60% at 50% -20%,rgba(0,212,255,.12),transparent),
+                 radial-gradient(ellipse 60% 40% at 90% 80%,rgba(124,58,237,.1),transparent);
+      pointer-events:none;z-index:0;
+    }
+
+    /* --- HEADER --- */
+    header{position:relative;z-index:1;text-align:center;padding:60px 20px 30px;}
+    .badge{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
+           color:var(--accent);font-size:12px;padding:4px 14px;border-radius:20px;letter-spacing:2px;margin-bottom:20px;}
+    h1{font-size:clamp(2rem,6vw,4rem);font-weight:800;letter-spacing:4px;
+       background:linear-gradient(135deg,#fff 0%,var(--accent) 50%,var(--accent2) 100%);
+       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .subtitle{color:var(--muted);margin-top:12px;font-size:16px;}
+    .dev-tag{margin-top:8px;color:var(--accent);font-size:13px;letter-spacing:1px;}
+
+    /* --- STATS BAR --- */
+    .stats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;padding:30px 20px;
+           position:relative;z-index:1;border-bottom:1px solid var(--border);}
+    .stat{text-align:center;}
+    .stat-num{font-size:2rem;font-weight:700;color:var(--accent);}
+    .stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+
+    /* --- SEARCH --- */
+    .search-wrap{position:relative;z-index:1;text-align:center;padding:30px 20px 0;}
+    .search-wrap input{
+      width:100%;max-width:500px;padding:12px 20px;border-radius:30px;
+      background:var(--card);border:1px solid var(--border);color:var(--text);
+      font-size:15px;outline:none;transition:.3s;
+    }
+    .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+
+    /* --- GRID --- */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+          gap:16px;padding:30px 20px 60px;max-width:1400px;margin:0 auto;position:relative;z-index:1;}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+          padding:18px 20px;transition:.25s;cursor:default;}
+    .card:hover{border-color:rgba(0,212,255,.4);transform:translateY(-3px);
+                box-shadow:0 8px 30px rgba(0,212,255,.08);}
+
+    .card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .ep-badge{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);
+              color:var(--accent);font-size:12px;font-weight:700;padding:3px 10px;
+              border-radius:6px;font-family:monospace;white-space:nowrap;}
+    .method-get{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);
+                color:var(--green);font-size:11px;padding:2px 8px;border-radius:4px;}
+
+    .param-row{margin-top:8px;font-size:12px;color:var(--muted);}
+    .param-row span{color:var(--accent2);}
+
+    .usage{margin-top:10px;background:#0d0d14;border-radius:8px;padding:8px 12px;
+           font-family:monospace;font-size:11px;color:#94a3b8;word-break:break-all;
+           border:1px solid var(--border);}
+    .usage b{color:var(--accent);}
+
+    /* --- FOOTER --- */
+    footer{position:relative;z-index:1;text-align:center;padding:30px 20px;
+           border-top:1px solid var(--border);color:var(--muted);font-size:13px;}
+    footer a{color:var(--accent);text-decoration:none;}
+    .dot{color:var(--accent2);}
+
+    .hidden{display:none;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">🚀 LIVE API</div>
+  <h1>J.A.R.V.I.S</h1>
+  <p class="subtitle">Multi-Purpose REST API — Fast, Free & Reliable</p>
+  <p class="dev-tag">By <b>Developer CyberSameer</b> &nbsp;|&nbsp; @CyberSameer</p>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="total-count">—</div><div class="stat-label">Total APIs</div></div>
+  <div class="stat"><div class="stat-num" style="color:var(--green)">GET</div><div class="stat-label">Method</div></div>
+  <div class="stat"><div class="stat-num" style="color:var(--accent2)">Free</div><div class="stat-label">Access</div></div>
+  <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Uptime</div></div>
+</div>
+
+<div class="search-wrap">
+  <input type="text" id="search" placeholder="🔍  Search endpoint eg. weather, anime, hash..."/>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  Made with ❤️ by <a href="https://t.me/CyberSameer" target="_blank">@CyberSameer</a>
+  <span class="dot"> • </span>
+  Group: <a href="https://t.me/+-HBD0IWfpANlOWRl" target="_blank">Join Telegram</a>
+  <span class="dot"> • </span>
+  Instagram: <a href="https://instagram.com/broken_heart_boy_sm" target="_blank">@broken_heart_boy_sm</a>
+</footer>
+
+<script>
+const CATEGORIES = {
+  india:      ['aadhar','gst','ifsc','imei','pan','pincode','vehicle','calltracer','pakistan','truecaller','num'],
+  downloader: ['alldownloader','instadownload','terabox','ytdownloader','music'],
+  social:     ['instagram','tginfo','github','twitter'],
+  lookup:     ['country','domaininfo','ipinfo','whois','ssl','email'],
+  utility:    ['base64','hash','uuid','password','bmi','age','math','numberfact','countdown','lorem','qr1','qr2','qr3','screenshot','color'],
+  fun:        ['joke','meme','cat','dog','quote','facts','urban','anime','lyrics','horoscope','emoji'],
+  info:       ['weather','crypto','currency','translate','dictionary','wikipedia','covid','news','nasa','movie','npm','pypi','pokemon','freefire','bgmi','recipe','cricket'],
+  tools:      ['shorturl','websitezip','tempmail','time','bin_checker','phone_validate','randomname','random_name'],
+};
+
+async function load(){
+  try{
+    const r = await fetch('/api-list');
+    const j = await r.json();
+    const endpoints = j.data.endpoints;
+    document.getElementById('total-count').textContent = endpoints.length;
+    renderCards(endpoints);
+  }catch(e){
+    document.getElementById('grid').innerHTML = '<p style="color:#64748b;text-align:center;grid-column:1/-1;padding:40px">Could not load API list. Make sure the server is running.</p>';
+  }
+}
+
+function renderCards(endpoints){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  if(!endpoints.length){
+    grid.innerHTML='<p style="color:#64748b;text-align:center;grid-column:1/-1;padding:40px">No results found.</p>';
+    return;
+  }
+  endpoints.forEach(ep=>{
+    const div=document.createElement('div');
+    div.className='card';
+    div.dataset.ep=(ep.endpoint||'').toLowerCase();
+    div.innerHTML=`
+      <div class="card-top">
+        <span class="ep-badge">${ep.endpoint}</span>
+        <span class="method-get">${ep.method||'GET'}</span>
+      </div>
+      <div class="param-row">Params: <span>${ep.parameter||'—'}</span></div>
+      <div class="usage"><b>GET</b> ${ep.us||ep.endpoint}</div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+document.getElementById('search').addEventListener('input',function(){
+  const q=this.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(c=>{
+    c.classList.toggle('hidden', q && !c.dataset.ep.includes(q));
+  });
+});
+
+load();
+</script>
+</body>
+</html>
