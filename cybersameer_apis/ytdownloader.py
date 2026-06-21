@@ -15,8 +15,8 @@ import yt_dlp
 
 app = Flask(__name__)
 
-# ---------- सिम्पल API Key चेक (उदाहरण) ----------
-VALID_KEYS = {"BHAI": "User"}  # आप और keys जोड़ सकते हैं
+# ---------- SIMPLE API KEY CHECK (example) ----------
+VALID_KEYS = {"BHAI": "User"}   # आप और keys जोड़ सकते हैं
 
 def check_access(key):
     if key in VALID_KEYS:
@@ -29,7 +29,7 @@ def send_response(status, data, extra=None):
         response.update(extra)
     return response
 
-# ---------- Helper: YouTube URL से Video ID निकालें ----------
+# ---------- EXTRACT VIDEO ID FROM ANY YOUTUBE URL ----------
 def extract_video_id(url):
     if not url:
         return None
@@ -53,7 +53,7 @@ def extract_video_id(url):
             return match.group(1)
     return None
 
-# ---------- मुख्य एंडपॉइंट: /ytdownloader ----------
+# ---------- MAIN ENDPOINT : /ytdownloader ----------
 @app.route("/ytdownloader", methods=["GET"])
 def ytdownloader():
     key = request.args.get("key", "")
@@ -88,6 +88,7 @@ def ytdownloader():
             if info is None:
                 return send_response("error", {}, {"message": "Video unavailable"})
 
+            # ----- Metadata -----
             metadata = {
                 "video_id": video_id,
                 "title": info.get("title"),
@@ -105,6 +106,7 @@ def ytdownloader():
                 "language": info.get("language") or info.get("default_language")
             }
 
+            # ----- All unique resolutions -----
             formats = []
             seen = set()
             for f in info.get("formats", []):
@@ -147,7 +149,7 @@ def ytdownloader():
             return send_response("error", {}, {"message": "Video unavailable"})
         return send_response("error", {}, {"message": f"Internal error: {error_msg}"})
 
-# ---------- डाउनलोड एंडपॉइंट ----------
+# ---------- DOWNLOAD ENDPOINT (key + video_id + itag) ----------
 @app.route("/download", methods=["GET"])
 def download_video():
     key = request.args.get("key", "")
@@ -208,7 +210,7 @@ def download_video():
         os.chdir(original_cwd)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-# ---------- Health check ----------
+# ---------- HEALTH CHECK (यह भी जोड़ दिया) ----------
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"status": "ok", "message": "YouTube Downloader API is running"})
