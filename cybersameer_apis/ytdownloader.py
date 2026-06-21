@@ -58,14 +58,18 @@ def ytdownloader():
     if not url:
         return send_response("error", {}, {"message": "YouTube URL required"})
 
-    # Playlist check
-    if 'playlist' in url or 'list=' in url:
-        return send_response("error", {}, {"message": "Playlist URLs are not supported. Provide a single video URL."})
-
+    # Pehle video ID nikaalo
     video_id = extract_video_id(url)
-    if not video_id:
-        return send_response("error", {}, {"message": "Invalid YouTube URL"})
 
+    # Agar video ID nahi mila, tabhi playlist check karo
+    if not video_id:
+        # Agar URL mein 'playlist' ya 'list=' hai toh playlist hai
+        if 'playlist' in url or 'list=' in url:
+            return send_response("error", {}, {"message": "Playlist URLs are not supported. Provide a single video URL."})
+        else:
+            return send_response("error", {}, {"message": "Invalid YouTube URL"})
+
+    # Ab video_id available hai, toh aage badho (list= ignore karo)
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -143,7 +147,6 @@ def ytdownloader():
                     unique_formats.append(f)
             formats = unique_formats
 
-            # clean_response se data clean karo (agar zaroori ho)
             clean_data = clean_response({
                 "metadata": metadata,
                 "formats": formats
@@ -225,7 +228,6 @@ def download_video():
 # ---------- Backward compatibility endpoints ----------
 @ytdownloader_bp.route("/formats", methods=["GET"])
 def get_formats():
-    # Redirect to main /ytdownloader with same params
     key = request.args.get("key", "")
     url = request.args.get("url", "")
     return redirect(f"/ytdownloader?key={key}&url={quote(url)}")
