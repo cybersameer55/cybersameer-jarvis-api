@@ -10,13 +10,24 @@ import re
 import tempfile
 import shutil
 from urllib.parse import urlparse, parse_qs
-from flask import Blueprint, request, send_file
+from flask import Flask, request, send_file, jsonify
 import yt_dlp
 
-# ---------- Core functions (आपके पास पहले से हैं) ----------
-from core import check_access, clean_response, send_response
+app = Flask(__name__)
 
-ytdownloader_bp = Blueprint("ytdownloader", __name__)
+# ---------- सिम्पल API Key चेक (उदाहरण) ----------
+VALID_KEYS = {"BHAI": "User"}  # आप और keys जोड़ सकते हैं
+
+def check_access(key):
+    if key in VALID_KEYS:
+        return {"name": VALID_KEYS[key]}, None
+    return None, jsonify({"status": "error", "message": "Invalid API key"}), 401
+
+def send_response(status, data, extra=None):
+    response = {"status": status, "data": data}
+    if extra:
+        response.update(extra)
+    return response
 
 # ---------- Helper: YouTube URL से Video ID निकालें ----------
 def extract_video_id(url):
@@ -43,18 +54,11 @@ def extract_video_id(url):
     return None
 
 # ---------- मुख्य एंडपॉइंट: /ytdownloader ----------
-@ytdownloader_bp.route("/ytdownloader", methods=["GET"])
+@app.route("/ytdownloader", methods=["GET"])
 def ytdownloader():
-    """
-    @api /ytdownloader
-    @method GET
-    @param url
-    @usage /ytdownloader?key=YOUR_API_KEY&url=YOUTUBE_LINK
-    """
     key = request.args.get("key", "")
     url = request.args.get("url", "")
 
-    # Access check
     user, err = check_access(key)
     if err:
         return err
@@ -62,7 +66,6 @@ def ytdownloader():
     if not url:
         return send_response("error", {}, {"message": "YouTube URL required"})
 
-    # Playlist check – single video only
     if "playlist" in url or "list=" in url:
         return send_response("error", {}, {"message": "Playlist URLs not supported"})
 
@@ -70,23 +73,21 @@ def ytdownloader():
     if not video_id:
         return send_response("error", {}, {"message": "Invalid YouTube URL"})
 
-    # yt-dlp से सारी जानकारी लें (बिना डाउनलोड किए)
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
         "ignoreerrors": True,
         "verbose": False,
-        "format": "all",  # सभी formats लाने के लिए
+        "format": "all",
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if info is None:
-                return send_response("error", {}, {"message": "Video unavailable (private, age-restricted, or region-blocked)"})
+                return send_response("error", {}, {"message": "Video unavailable"})
 
-            # Metadata
             metadata = {
                 "video_id": video_id,
                 "title": info.get("title"),
@@ -104,11 +105,10 @@ def ytdownloader():
                 "language": info.get("language") or info.get("default_language")
             }
 
-            # सभी unique resolutions के साथ formats
             formats = []
-            seen_resolutions = set()
+            seen = set()
             for f in info.get("formats", []):
-                if f.get("vcodec") != "none":  # वीडियो वाला format
+                if f.get("vcodec") != "none":
                     resolution = f.get("resolution")
                     if not resolution or resolution == "none":
                         height = f.get("height")
@@ -116,16 +116,11 @@ def ytdownloader():
                             resolution = f"{height}p"
                         else:
                             resolution = "unknown"
-                    # केवल unique resolutions रखें (पहली बार जो मिला वही लें)
-                    if resolution in seen_resolutions:
+                    if resolution in seen:
                         continue
-                    seen_resolutions.add(resolution)
-
+                    seen.add(resolution)
                     filesize = f.get("filesize") or f.get("filesize_approx")
-                    # डाउनलोड लिंक – इसमें key और video_id, itag शामिल करें
-                    download_link = (
-                        f"/download?key={key}&video_id={video_id}&itag={f['format_id']}"
-                    )
+                    download_link = f"/download?key={key}&video_id={video_id}&itag={f['format_id']}"
                     formats.append({
                         "itag": f["format_id"],
                         "resolution": resolution,
@@ -136,27 +131,9 @@ def ytdownloader():
                         "download_url": download_link
                     })
 
-            # सॉर्ट – 144p से 2160p तक
-            def sort_key(f):
-                res = f["resolution"]
-                if res and "p" in res:
-                    try:
-                        return int(res.split("p")[0])
-                    except:
-                        pass
-                return 0
-            formats.sort(key=sort_key)
+            formats.sort(key=lambda x: int(x["resolution"].split("p")[0]) if x["resolution"] and "p" in x["resolution"] else 0)
 
-            response_data = {
-                "metadata": metadata,
-                "formats": formats
-            }
-
-            # clean_response (यदि आपके core में कोई विशेष क्लीनिंग हो तो)
-            # यहाँ हम सीधे send_response कर रहे हैं, लेकिन अगर clean_response चाहिए तो उसे call कर सकते हैं।
-            # उदाहरण: cleaned = clean_response(response_data)
-            # return send_response("success", cleaned, {...})
-            return send_response("success", response_data, {
+            return send_response("success", {"metadata": metadata, "formats": formats}, {
                 "user": user["name"],
                 "input_url": url,
                 "video_id": video_id
@@ -165,19 +142,18 @@ def ytdownloader():
     except Exception as e:
         error_msg = str(e)
         if "Sign in to confirm your age" in error_msg:
-            return send_response("error", {}, {"message": "Age-restricted video. Provide cookies."})
+            return send_response("error", {}, {"message": "Age-restricted video"})
         elif "This video is not available" in error_msg:
             return send_response("error", {}, {"message": "Video unavailable"})
         return send_response("error", {}, {"message": f"Internal error: {error_msg}"})
 
-# ---------- डाउनलोड एंडपॉइंट (key + video_id + itag) ----------
-@ytdownloader_bp.route("/download", methods=["GET"])
+# ---------- डाउनलोड एंडपॉइंट ----------
+@app.route("/download", methods=["GET"])
 def download_video():
     key = request.args.get("key", "")
     video_id = request.args.get("video_id")
     itag = request.args.get("itag")
 
-    # Access check
     user, err = check_access(key)
     if err:
         return err
@@ -209,7 +185,6 @@ def download_video():
                 return send_response("error", {}, {"message": "Video unavailable"})
 
             filename = ydl.prepare_filename(info)
-            # अगर filename exact न मिले तो ढूँढें
             if not os.path.exists(filename):
                 for f in os.listdir("."):
                     if f.startswith(info.get("title", "")):
@@ -217,9 +192,8 @@ def download_video():
                         break
 
             if not os.path.exists(filename):
-                return send_response("error", {}, {"message": "File not found after download"})
+                return send_response("error", {}, {"message": "File not found"})
 
-            # Absolute path बनाकर send करें
             abs_path = os.path.join(temp_dir, filename)
             return send_file(abs_path, as_attachment=True)
 
@@ -233,3 +207,11 @@ def download_video():
     finally:
         os.chdir(original_cwd)
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+# ---------- Health check ----------
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"status": "ok", "message": "YouTube Downloader API is running"})
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
