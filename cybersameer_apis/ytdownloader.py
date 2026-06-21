@@ -15,23 +15,23 @@ from core import check_access, clean_response, fetch_api, send_response
 
 ytdownloader_bp = Blueprint("ytdownloader", __name__)
 
-# ---------- YouTube URL se Video ID nikaalna ----------
+# ---------- YouTube URL se Video ID nikaalna - STRONG VERSION ----------
 def extract_video_id(url):
     if not url:
         return None
     parsed = urlparse(url)
-    if parsed.hostname in ('www.youtube.com', 'youtube.com', 'm.youtube.com'):
-        if parsed.path == '/watch':
-            query = parse_qs(parsed.query)
-            if 'v' in query:
-                return query['v'][0]
+    query = parse_qs(parsed.query)
+    # Sabse pehle 'v' parameter check karo
+    if 'v' in query:
+        return query['v'][0]
+    # Agar nahi mila toh regex se try karo (shorts, youtu.be, embed, etc.)
     patterns = [
         r'(?:youtu\.be\/)([\w-]+)',
         r'(?:youtube\.com\/shorts\/)([\w-]+)',
         r'(?:youtube\.com\/live\/)([\w-]+)',
         r'(?:youtube\.com\/embed\/)([\w-]+)',
         r'(?:youtube\.com\/v\/)([\w-]+)',
-        r'(?:youtube\.com\/watch\?.*?v=)([\w-]+)'
+        r'(?:youtube\.com\/watch\?.*?v=)([\w-]+)'  # fallback
     ]
     for pattern in patterns:
         match = re.search(pattern, url)
@@ -58,18 +58,11 @@ def ytdownloader():
     if not url:
         return send_response("error", {}, {"message": "YouTube URL required"})
 
-    # Pehle video ID nikaalo
+    # Video ID nikaalo
     video_id = extract_video_id(url)
-
-    # Agar video ID nahi mila, tabhi playlist check karo
     if not video_id:
-        # Agar URL mein 'playlist' ya 'list=' hai toh playlist hai
-        if 'playlist' in url or 'list=' in url:
-            return send_response("error", {}, {"message": "Playlist URLs are not supported. Provide a single video URL."})
-        else:
-            return send_response("error", {}, {"message": "Invalid YouTube URL"})
+        return send_response("error", {}, {"message": "Invalid YouTube URL – cannot extract video ID"})
 
-    # Ab video_id available hai, toh aage badho (list= ignore karo)
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -84,6 +77,10 @@ def ytdownloader():
             info = ydl.extract_info(url, download=False)
             if info is None:
                 return send_response("error", {}, {"message": "Video unavailable. Private, age-restricted, or region-blocked."})
+
+            # Agar playlist hai toh entries hongi – reject
+            if 'entries' in info:
+                return send_response("error", {}, {"message": "Playlist URLs are not supported. Provide a single video URL."})
 
             # Metadata
             metadata = {
@@ -103,17 +100,14 @@ def ytdownloader():
                 "language": info.get('language') or info.get('default_language')
             }
 
-            # Sabhi formats – sirf video+audio waale (ya sirf video bhi chaahe)
+            # Sabhi formats – sirf video waale
             formats = []
             for f in info.get('formats', []):
                 if f.get('vcodec') != 'none':
                     resolution = f.get('resolution')
                     if not resolution or resolution == 'none':
                         height = f.get('height')
-                        if height:
-                            resolution = f"{height}p"
-                        else:
-                            resolution = 'unknown'
+                        resolution = f"{height}p" if height else 'unknown'
                     filesize = f.get('filesize') or f.get('filesize_approx')
                     download_link = f"/ytdownloader/download?video_id={video_id}&itag={f['format_id']}&key={key}"
                     formats.append({
@@ -126,7 +120,7 @@ def ytdownloader():
                         "download_url": download_link
                     })
 
-            # Sort by resolution
+            # Resolution ke hisaab se sort
             def sort_key(f):
                 res = f['resolution']
                 if res and 'p' in res:
@@ -165,7 +159,7 @@ def ytdownloader():
             return send_response("error", {}, {"message": "Video unavailable"})
         return send_response("error", {}, {"message": error_msg})
 
-# ---------- Download endpoint ----------
+# ---------- Download endpoint (unchanged) ----------
 @ytdownloader_bp.route("/download", methods=["GET"])
 def download_video():
     key = request.args.get("key", "")
@@ -225,7 +219,7 @@ def download_video():
         os.chdir(original_cwd)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-# ---------- Backward compatibility endpoints ----------
+# ---------- Backward compatibility ----------
 @ytdownloader_bp.route("/formats", methods=["GET"])
 def get_formats():
     key = request.args.get("key", "")
