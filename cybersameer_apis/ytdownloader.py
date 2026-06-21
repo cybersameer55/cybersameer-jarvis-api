@@ -4,32 +4,18 @@
 @param url
 @usage /ytdownloader?key=YOUR_API_KEY&url=YOUTUBE_LINK
 """
-
+from flask import Blueprint, request, send_file, redirect
+from urllib.parse import quote, urlparse, parse_qs
 import os
 import re
 import tempfile
 import shutil
-from urllib.parse import urlparse, parse_qs
-from flask import Flask, request, send_file, jsonify
 import yt_dlp
+from core import check_access, clean_response, fetch_api, send_response
 
-app = Flask(__name__)
+ytdownloader_bp = Blueprint("ytdownloader", __name__)
 
-# ---------- SIMPLE API KEY CHECK (example) ----------
-VALID_KEYS = {"BHAI": "User"}   # आप और keys जोड़ सकते हैं
-
-def check_access(key):
-    if key in VALID_KEYS:
-        return {"name": VALID_KEYS[key]}, None
-    return None, jsonify({"status": "error", "message": "Invalid API key"}), 401
-
-def send_response(status, data, extra=None):
-    response = {"status": status, "data": data}
-    if extra:
-        response.update(extra)
-    return response
-
-# ---------- EXTRACT VIDEO ID FROM ANY YOUTUBE URL ----------
+# ---------- YouTube URL se Video ID nikaalna ----------
 def extract_video_id(url):
     if not url:
         return None
@@ -53,9 +39,15 @@ def extract_video_id(url):
             return match.group(1)
     return None
 
-# ---------- MAIN ENDPOINT : /ytdownloader ----------
-@app.route("/ytdownloader", methods=["GET"])
+# ---------- Main endpoint: /ytdownloader ----------
+@ytdownloader_bp.route("/ytdownloader", methods=["GET"])
 def ytdownloader():
+    """
+    @api /ytdownloader
+    @method GET
+    @param url
+    @usage /ytdownloader?key=YOUR_API_KEY&url=YOUTUBE_LINK
+    """
     key = request.args.get("key", "")
     url = request.args.get("url", "")
 
@@ -66,91 +58,112 @@ def ytdownloader():
     if not url:
         return send_response("error", {}, {"message": "YouTube URL required"})
 
-    if "playlist" in url or "list=" in url:
-        return send_response("error", {}, {"message": "Playlist URLs not supported"})
+    # Playlist check
+    if 'playlist' in url or 'list=' in url:
+        return send_response("error", {}, {"message": "Playlist URLs are not supported. Provide a single video URL."})
 
     video_id = extract_video_id(url)
     if not video_id:
         return send_response("error", {}, {"message": "Invalid YouTube URL"})
 
     ydl_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "extract_flat": False,
-        "ignoreerrors": True,
-        "verbose": False,
-        "format": "all",
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+        'ignoreerrors': True,
+        'verbose': False,
+        'format': 'all',
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if info is None:
-                return send_response("error", {}, {"message": "Video unavailable"})
+                return send_response("error", {}, {"message": "Video unavailable. Private, age-restricted, or region-blocked."})
 
-            # ----- Metadata -----
+            # Metadata
             metadata = {
                 "video_id": video_id,
-                "title": info.get("title"),
-                "description": info.get("description"),
-                "channel_name": info.get("uploader"),
-                "channel_id": info.get("channel_id"),
-                "publish_date": info.get("upload_date"),
-                "duration": info.get("duration"),
-                "views": info.get("view_count"),
-                "likes": info.get("like_count"),
-                "tags": info.get("tags", []),
-                "category": info.get("categories", [''])[0] if info.get("categories") else None,
-                "thumbnail": info.get("thumbnail"),
-                "live_status": info.get("live_status") == "is_live",
-                "language": info.get("language") or info.get("default_language")
+                "title": info.get('title'),
+                "description": info.get('description'),
+                "channel_name": info.get('uploader'),
+                "channel_id": info.get('channel_id'),
+                "publish_date": info.get('upload_date'),
+                "duration": info.get('duration'),
+                "views": info.get('view_count'),
+                "likes": info.get('like_count'),
+                "tags": info.get('tags', []),
+                "category": info.get('categories', [''])[0] if info.get('categories') else None,
+                "thumbnail": info.get('thumbnail'),
+                "live_status": info.get('live_status') == 'is_live',
+                "language": info.get('language') or info.get('default_language')
             }
 
-            # ----- All unique resolutions -----
+            # Sabhi formats – sirf video+audio waale (ya sirf video bhi chaahe)
             formats = []
-            seen = set()
-            for f in info.get("formats", []):
-                if f.get("vcodec") != "none":
-                    resolution = f.get("resolution")
-                    if not resolution or resolution == "none":
-                        height = f.get("height")
+            for f in info.get('formats', []):
+                if f.get('vcodec') != 'none':
+                    resolution = f.get('resolution')
+                    if not resolution or resolution == 'none':
+                        height = f.get('height')
                         if height:
                             resolution = f"{height}p"
                         else:
-                            resolution = "unknown"
-                    if resolution in seen:
-                        continue
-                    seen.add(resolution)
-                    filesize = f.get("filesize") or f.get("filesize_approx")
-                    download_link = f"/download?key={key}&video_id={video_id}&itag={f['format_id']}"
+                            resolution = 'unknown'
+                    filesize = f.get('filesize') or f.get('filesize_approx')
+                    download_link = f"/ytdownloader/download?video_id={video_id}&itag={f['format_id']}&key={key}"
                     formats.append({
-                        "itag": f["format_id"],
+                        "itag": f['format_id'],
                         "resolution": resolution,
-                        "fps": f.get("fps"),
+                        "fps": f.get('fps'),
                         "filesize": filesize,
-                        "ext": f["ext"],
-                        "format_note": f.get("format_note", ""),
+                        "ext": f['ext'],
+                        "format_note": f.get('format_note', ''),
                         "download_url": download_link
                     })
 
-            formats.sort(key=lambda x: int(x["resolution"].split("p")[0]) if x["resolution"] and "p" in x["resolution"] else 0)
+            # Sort by resolution
+            def sort_key(f):
+                res = f['resolution']
+                if res and 'p' in res:
+                    try:
+                        return int(res.split('p')[0])
+                    except:
+                        pass
+                return 0
+            formats.sort(key=sort_key)
 
-            return send_response("success", {"metadata": metadata, "formats": formats}, {
+            # Unique resolutions
+            seen = set()
+            unique_formats = []
+            for f in formats:
+                key_res = f['resolution']
+                if key_res not in seen:
+                    seen.add(key_res)
+                    unique_formats.append(f)
+            formats = unique_formats
+
+            # clean_response se data clean karo (agar zaroori ho)
+            clean_data = clean_response({
+                "metadata": metadata,
+                "formats": formats
+            })
+
+            return send_response("success", clean_data, {
                 "user": user["name"],
-                "input_url": url,
-                "video_id": video_id
+                "input_url": url
             })
 
     except Exception as e:
         error_msg = str(e)
         if "Sign in to confirm your age" in error_msg:
-            return send_response("error", {}, {"message": "Age-restricted video"})
+            return send_response("error", {}, {"message": "Age-restricted video. Provide cookies."})
         elif "This video is not available" in error_msg:
             return send_response("error", {}, {"message": "Video unavailable"})
-        return send_response("error", {}, {"message": f"Internal error: {error_msg}"})
+        return send_response("error", {}, {"message": error_msg})
 
-# ---------- DOWNLOAD ENDPOINT (key + video_id + itag) ----------
-@app.route("/download", methods=["GET"])
+# ---------- Download endpoint ----------
+@ytdownloader_bp.route("/download", methods=["GET"])
 def download_video():
     key = request.args.get("key", "")
     video_id = request.args.get("video_id")
@@ -161,19 +174,19 @@ def download_video():
         return err
 
     if not video_id or not itag:
-        return send_response("error", {}, {"message": "Missing video_id or itag"})
+        return send_response("error", {}, {"message": "Missing 'video_id' or 'itag' parameter"})
 
     url = f"https://youtu.be/{video_id}"
 
     ydl_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "format": itag,
-        "outtmpl": "%(title)s.%(ext)s",
-        "ignoreerrors": True,
-        "retries": 5,
-        "fragment_retries": 5,
-        "verbose": False,
+        'quiet': True,
+        'no_warnings': True,
+        'format': itag,
+        'outtmpl': '%(title)s.%(ext)s',
+        'ignoreerrors': True,
+        'retries': 5,
+        'fragment_retries': 5,
+        'verbose': False,
     }
 
     temp_dir = tempfile.mkdtemp()
@@ -188,16 +201,15 @@ def download_video():
 
             filename = ydl.prepare_filename(info)
             if not os.path.exists(filename):
-                for f in os.listdir("."):
-                    if f.startswith(info.get("title", "")):
+                for f in os.listdir('.'):
+                    if f.startswith(info.get('title', '')):
                         filename = f
                         break
 
             if not os.path.exists(filename):
                 return send_response("error", {}, {"message": "File not found"})
 
-            abs_path = os.path.join(temp_dir, filename)
-            return send_file(abs_path, as_attachment=True)
+            return send_file(filename, as_attachment=True)
 
     except Exception as e:
         error_msg = str(e)
@@ -205,15 +217,25 @@ def download_video():
             return send_response("error", {}, {"message": "Age-restricted video"})
         elif "This video is not available" in error_msg:
             return send_response("error", {}, {"message": "Video unavailable"})
-        return send_response("error", {}, {"message": f"Download error: {error_msg}"})
+        return send_response("error", {}, {"message": error_msg})
     finally:
         os.chdir(original_cwd)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-# ---------- HEALTH CHECK (यह भी जोड़ दिया) ----------
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"status": "ok", "message": "YouTube Downloader API is running"})
+# ---------- Backward compatibility endpoints ----------
+@ytdownloader_bp.route("/formats", methods=["GET"])
+def get_formats():
+    # Redirect to main /ytdownloader with same params
+    key = request.args.get("key", "")
+    url = request.args.get("url", "")
+    return redirect(f"/ytdownloader?key={key}&url={quote(url)}")
 
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+@ytdownloader_bp.route("/video/<video_id>", methods=["GET"])
+def get_video(video_id):
+    key = request.args.get("key", "")
+    url = f"https://youtu.be/{video_id}"
+    return redirect(f"/ytdownloader?key={key}&url={quote(url)}")
+
+@ytdownloader_bp.route("/health", methods=["GET"])
+def health():
+    return send_response("success", {"status": "ok"}, {})
