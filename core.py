@@ -6,9 +6,9 @@ from datetime import datetime
 USERS = {
     "BHAI":              {"name": "𝐇𝐀𝐂𝐊𝐄𝐑 𝐇𝐔 𝐁𝐇𝐀𝐈",             "expiry": "unlimited", "status": "active"},
     "BHAIYA":            {"name": "𝐑𝐀𝐃𝐇𝐄 𝐁𝐇𝐀𝐈𝐘𝐀",              "expiry": "unlimited", "status": "active"},
-    "MITRO": {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄", "expiry": "2026-6-29", "status": "active"},
-    "Jarvis4":  {"name": "User 4",  "expiry": "unlimited", "status": "active"},
-    "Jarvis5":  {"name": "User 5",  "expiry": "unlimited", "status": "active"},
+    "SAMEER": {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄", "expiry": "2026-6-29", "status": "active"},
+    "Anonymous":  {"name": "𝐅𝐑𝐈𝐄𝐍𝐃 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",  "expiry": "2026-6-29", "status": "active"},
+    "DARKBHIYA":  {"name": "𝐃𝐀𝐑𝐊 𝐁𝐇𝐀𝐈 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",  "expiry": "2026-6-29", "status": "active"},
     "Jarvis6":  {"name": "User 6",  "expiry": "unlimited", "status": "active"},
     "Jarvis7":  {"name": "User 7",  "expiry": "unlimited", "status": "active"},
     "Jarvis8":  {"name": "User 8",  "expiry": "unlimited", "status": "active"},
