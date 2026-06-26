@@ -49,7 +49,7 @@ REMOVE_KEYS = [
     "access_token","auth","secret","client_secret","server","host","ip","port",
     "subscription","plan","pricing","referral","ref_code","invite","promo","note",
     "message","msg","warning","debug","trace","stack","error_details",
-    "parameters","timestamp","source","input"
+    "parameters","timestamp","source","input","by","tital","description"
 ]
 
 REMOVE_VALUES = [
@@ -62,7 +62,7 @@ REMOVE_VALUES = [
     "buy","buy now","purchase","premium","upgrade","free trial","limited offer",
     "join now","subscribe","follow","invalid","forbidden","unauthorized",
     "api key","expired key","limit reached","access denied","not allowed",
-    "all rights reserved","terms","privacy_policy","license"
+    "all rights reserved","terms","privacy_policy","license","@ftgamer2","💾HiTeckGroop.in","At the beginning of 2025, a huge leak with the data of Indian cellular operators began to spread on the network. The HITECKGROOP website is declared as a source, but this information is unverified. The data contains 1.8 billion records, however, the number of unique users below, about 300 million. Each record indicated the full name, the name of the father, and the number of the document. Most often this is the Aadhaar number, but the taxpayer's passports or numbers were also found. There were up to two phones in each line, however, since several records had several records for one user, the total number of well -known phones sometimes reached several tens. Some records also had nicknames and emails."
 ]
 
 
