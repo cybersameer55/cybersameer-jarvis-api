@@ -2,28 +2,35 @@ from flask import request, jsonify
 import requests as req
 import re
 from datetime import datetime
+import logging  # added for debugging
+
+# Configure logging (optional)
+logging.basicConfig(level=logging.DEBUG)
 
 USERS = {
     "BHAI":              {"name": "𝐇𝐀𝐂𝐊𝐄𝐑 𝐇𝐔 𝐁𝐇𝐀𝐈",             "expiry": "unlimited", "status": "active"},
     "BHAIYA":            {"name": "𝐑𝐀𝐃𝐇𝐄 𝐁𝐇𝐀𝐈𝐘𝐀",              "expiry": "unlimited", "status": "active"},
-    "SAMEER": {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄", "expiry": "2026-6-29", "status": "active"},
-    "Anonymous":  {"name": "𝐅𝐑𝐈𝐄𝐍𝐃 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",  "expiry": "2026-6-29", "status": "active"},
-    "DARKBHIYA":  {"name": "𝐃𝐀𝐑𝐊 𝐁𝐇𝐀𝐈 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",  "expiry": "2026-6-29", "status": "active"},
-    "Jarvis6":  {"name": "User 6",  "expiry": "unlimited", "status": "active"},
-    "Jarvis7":  {"name": "User 7",  "expiry": "unlimited", "status": "active"},
-    "Jarvis8":  {"name": "User 8",  "expiry": "unlimited", "status": "active"},
-    "Jarvis9":  {"name": "User 9",  "expiry": "unlimited", "status": "active"},
-    "Jarvis10": {"name": "User 10", "expiry": "unlimited", "status": "active"},
-    "Jarvis11": {"name": "User 11", "expiry": "unlimited", "status": "active"},
-    "Jarvis12": {"name": "User 12", "expiry": "unlimited", "status": "active"},
-    "Jarvis13": {"name": "User 13", "expiry": "unlimited", "status": "active"},
-    "Jarvis14": {"name": "User 14", "expiry": "unlimited", "status": "active"},
-    "Jarvis15": {"name": "User 15", "expiry": "unlimited", "status": "active"},
-    "Jarvis16": {"name": "User 16", "expiry": "unlimited", "status": "active"},
-    "Jarvis17": {"name": "User 17", "expiry": "unlimited", "status": "active"},
-    "Jarvis18": {"name": "User 18", "expiry": "unlimited", "status": "active"},
-    "Jarvis19": {"name": "User 19", "expiry": "unlimited", "status": "active"},
-    "Jarvis20": {"name": "User 20", "expiry": "unlimited", "status": "active"},
+    "MITRO":             {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄",       "expiry": "2026-6-29", "status": "active"},
+    "SAMEER":            {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄",       "expiry": "2026-6-29", "status": "active"},
+    "Anonymous":         {"name": "𝐅𝐑𝐈𝐄𝐍𝐃 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",          "expiry": "2026-6-29", "status": "active"},
+    "DARKBHIYA":         {"name": "𝐃𝐀𝐑𝐊 𝐁𝐇𝐀𝐈𝐘𝐀",                "expiry": "2026-6-29", "status": "active"},
+    "Jarvis4":           {"name": "User 4",  "expiry": "unlimited", "status": "active"},
+    "Jarvis5":           {"name": "User 5",  "expiry": "unlimited", "status": "active"},
+    "Jarvis6":           {"name": "User 6",  "expiry": "unlimited", "status": "active"},
+    "Jarvis7":           {"name": "User 7",  "expiry": "unlimited", "status": "active"},
+    "Jarvis8":           {"name": "User 8",  "expiry": "unlimited", "status": "active"},
+    "Jarvis9":           {"name": "User 9",  "expiry": "unlimited", "status": "active"},
+    "Jarvis10":          {"name": "User 10", "expiry": "unlimited", "status": "active"},
+    "Jarvis11":          {"name": "User 11", "expiry": "unlimited", "status": "active"},
+    "Jarvis12":          {"name": "User 12", "expiry": "unlimited", "status": "active"},
+    "Jarvis13":          {"name": "User 13", "expiry": "unlimited", "status": "active"},
+    "Jarvis14":          {"name": "User 14", "expiry": "unlimited", "status": "active"},
+    "Jarvis15":          {"name": "User 15", "expiry": "unlimited", "status": "active"},
+    "Jarvis16":          {"name": "User 16", "expiry": "unlimited", "status": "active"},
+    "Jarvis17":          {"name": "User 17", "expiry": "unlimited", "status": "active"},
+    "Jarvis18":          {"name": "User 18", "expiry": "unlimited", "status": "active"},
+    "Jarvis19":          {"name": "User 19", "expiry": "unlimited", "status": "active"},
+    "Jarvis20":          {"name": "User 20", "expiry": "unlimited", "status": "active"},
 }
 
 DEVELOPER = {
@@ -50,7 +57,6 @@ REMOVE_KEYS = [
     "subscription","plan","pricing","referral","ref_code","invite","promo","note",
     "message","msg","warning","debug","trace","stack","error_details",
     "parameters","timestamp","source","input",
-    # 🆕 added keys
     "by", "title", "tital", "description"
 ]
 
@@ -65,7 +71,6 @@ REMOVE_VALUES = [
     "join now","subscribe","follow","invalid","forbidden","unauthorized",
     "api key","expired key","limit reached","access denied","not allowed",
     "all rights reserved","terms","privacy_policy","license",
-    # 🆕 added values
     "@ftgamer2",
     "💾HiTeckGroop.in",
     "At the beginning of 2025, a huge leak with the data of Indian cellular operators began to spread on the network. The HITECKGROOP website is declared as a source, but this information is unverified. The data contains 1.8 billion records, however, the number of unique users below, about 300 million. Each record indicated the full name, the name of the father, and the number of the document. Most often this is the Aadhaar number, but the taxpayer's passports or numbers were also found. There were up to two phones in each line, however, since several records had several records for one user, the total number of well -known phones sometimes reached several tens. Some records also had nicknames and emails."
@@ -90,11 +95,21 @@ def clean_response(data):
     return data
 
 def check_access(key):
+    # 🔧 IMPORTANT: Strip any leading/trailing whitespace
+    if key:
+        key = key.strip()
+    
+    # 🐞 Debug: print the received key to logs
+    print(f"DEBUG: Received API key = '{key}'")
+    logging.debug(f"Received API key = '{key}'")
+
     if not key or key not in USERS:
         return None, send_response("error", {}, {"message": "Invalid API Key"})
+    
     user = USERS[key]
     if user["status"] != "active":
         return None, send_response("error", {}, {"message": "Key disabled"})
+    
     if user["expiry"] != "unlimited":
         parts = user["expiry"].split("-")
         expiry = datetime(int(parts[0]), int(parts[1]), int(parts[2]))
