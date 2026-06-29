@@ -13,7 +13,7 @@ USERS = {
     "MITRO":             {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄",       "expiry": "2026-6-29", "status": "active"},
     "SAMEER":            {"name": "𝐒𝐈𝐑𝐅 𝐃𝐎𝐒𝐓𝐎 𝐊𝐄 𝐋𝐈𝐘𝐄",       "expiry": "2026-6-29", "status": "active"},
     "Anonymous":         {"name": "𝐅𝐑𝐈𝐄𝐍𝐃 𝐇𝐀𝐈 𝐌𝐄𝐑𝐀",          "expiry": "2026-6-29", "status": "active"},
-    "DARKBHIYA":         {"name": "𝐃𝐀𝐑𝐊 𝐁𝐇𝐀𝐈𝐘𝐀",                "expiry": "2026-6-29", "status": "active"},
+    "DARKBHIYA":         {"name": "𝐃𝐀𝐑𝐊 𝐁𝐇𝐀𝐈𝐘𝐀",                "expiry": "2026-7-29", "status": "active"},
     "Jarvis4":           {"name": "User 4",  "expiry": "unlimited", "status": "active"},
     "Jarvis5":           {"name": "User 5",  "expiry": "unlimited", "status": "active"},
     "Jarvis6":           {"name": "User 6",  "expiry": "unlimited", "status": "active"},
