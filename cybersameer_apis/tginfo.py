@@ -41,7 +41,7 @@ def tginfo():
     is_id = iduser.isdigit()
     u     = quote(iduser)
 
-    api1 = api2 = api3 = api4 = {}
+    api1 = api2 = api3 = api4 = api5 = api6 = {}
 
     if is_id:
         api1 = clean_response(fetch_api(f"https://api.b77bf911.workers.dev/telegram?user={u}") or {})
@@ -49,15 +49,23 @@ def tginfo():
     else:
         api3 = clean_response(fetch_api(f"https://anon-tg-info.vercel.app/telegram?key=temp104&username={u}") or {})
 
-    # 🆕 NEW API (works for both id and username)
+    # 🆕 NEW API 4 (works for both id and username)
     api4 = clean_response(fetch_api(f"https://telegram-info-plum.vercel.app/api/search?q={u}") or {})
+
+    # 🆕 NEW API 5 (username only - https://anon-tg-info.vercel.app/telegram?key=temp1750&username=monk)
+    api5 = clean_response(fetch_api(f"https://anon-tg-info.vercel.app/telegram?key=temp1750&username={u}") or {})
+
+    # 🆕 NEW API 6 (works for both id and username - https://spyshadow.site/api/tg-to-num.php?q=6897971731&token=knowncoder)
+    api6 = clean_response(fetch_api(f"https://spyshadow.site/api/tg-to-num.php?q={u}&token=knowncoder") or {})
 
     data1 = format_tg(api1)
     data2 = format_tg(api2)
     data3 = format_tg(api3)
     data4 = format_tg(api4)
+    data5 = format_tg(api5)
+    data6 = format_tg(api6)
 
-    if not data1 and not data2 and not data3 and not data4:
+    if not data1 and not data2 and not data3 and not data4 and not data5 and not data6:
         return send_response("error", {}, {"message": "No data found"})
 
     return send_response("success", {
@@ -65,9 +73,11 @@ def tginfo():
         "type":  "id" if is_id else "username",
         "time":  get_time_now(),
         "sameer_lookup": {
-            "results_1": data1,
-            "results_2": data2,
-            "results_3": data3,
-            "results_4": data4
+            "api_1": data1,
+            "api_2": data2,
+            "api_3": data3,
+            "api_4": data4,
+            "api_5": data5,
+            "api_6": data6
         }
     }, {"user": user["name"]})

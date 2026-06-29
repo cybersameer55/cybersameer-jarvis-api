@@ -26,15 +26,17 @@ def freefire():
 
     api1 = clean_response(fetch_api(f"https://anku-ffapi-inky.vercel.app/ff?uid={quote(uid)}") or {})
     api2 = clean_response(fetch_api(f"https://mafuuuu-info-api.vercel.app/mafu-info?uid={quote(uid)}") or {})
+    api3 = clean_response(fetch_api(f"https://anon-ff-info.vercel.app/info?key=76temp&uid={quote(uid)}") or {})
 
-    if not api1 and not api2:
+    if not api1 and not api2 and not api3:
         return send_response("error", {}, {"message": "No data found"})
 
     return send_response("success", {
-        "uid":  uid,
+        "uid": uid,
         "time": get_time_now(),
         "sameer_lookup": {
             "results_1": api1,
-            "results_2": api2
+            "results_2": api2,
+            "results_3": api3
         }
     }, {"user": user["name"]})

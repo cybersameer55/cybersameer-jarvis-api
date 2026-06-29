@@ -28,14 +28,20 @@ def pan():
     if not re.match(r"^[A-Z]{5}\d{4}[A-Z]{1}$", pan_val):
         return send_response("error", {}, {"message": "Invalid PAN format"})
 
-    api = fetch_api(f"https://anon-gst-info.vercel.app/advanced/pan?key=temp114&pan={quote(pan_val)}")
-    api = clean_response(api)
+    p = quote(pan_val)
 
-    if not api:
+    # ---------- BOTH API SOURCES ----------
+    api1 = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/pan?key=temp114&pan={p}") or {})
+    api2 = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/pan?key=tempg2206&pan={p}") or {})
+
+    if not api1 and not api2:
         return send_response("error", {}, {"message": "No data found"})
 
     return send_response("success", {
         "input_pan": pan_val,
         "time":      get_time_now(),
-        "result":    api
+        "sameer_lookup": {
+            "api_1": api1,
+            "api_2": api2
+        }
     }, {"user": user["name"]})

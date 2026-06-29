@@ -32,18 +32,19 @@ def gst():
         qtype = "pan"
 
     q = quote(query)
-    billing = gstin_adv = gstin_basic = name_api = pan_api = {}
+    billing = gstin_adv = gstin_adv_new = gstin_basic = name_api = pan_api = {}
 
     if qtype == "gstin":
-        billing     = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/billing?key=temp114&financial_year=2025-26&gstin={q}") or {})
-        gstin_adv   = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/gstin?key=temp114&gstin={q}") or {})
-        gstin_basic = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/gstin?gstin={q}&key=anon404") or {})
+        billing        = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/billing?key=temp114&financial_year=2025-26&gstin={q}") or {})
+        gstin_adv      = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/gstin?key=temp114&gstin={q}") or {})
+        gstin_adv_new  = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/gstin?key=tempg2206&gstin={q}") or {})  # ⬅️ NAYA API
+        gstin_basic    = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/gstin?gstin={q}&key=anon404") or {})
     elif qtype == "name":
         name_api = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/advanced/name?key=temp114&name={q}") or {})
     elif qtype == "pan":
         pan_api  = clean_response(fetch_api(f"https://anon-gst-info.vercel.app/pan?pan={q}&key=anon404") or {})
 
-    if not billing and not name_api and not gstin_adv and not gstin_basic and not pan_api:
+    if not billing and not name_api and not gstin_adv and not gstin_adv_new and not gstin_basic and not pan_api:
         return send_response("error", {}, {"message": "No data found"})
 
     return send_response("success", {
@@ -51,7 +52,11 @@ def gst():
         "type":  qtype,
         "time":  get_time_now(),
         "sameer_lookup": {
-            "gstin_data":   {"advanced": gstin_adv, "basic": gstin_basic},
+            "gstin_data": {
+                "advanced":      gstin_adv,
+                "advanced_new":  gstin_adv_new,  # ⬅️ NAYA DATA YAHAN
+                "basic":         gstin_basic
+            },
             "billing_info": billing,
             "name_search":  name_api,
             "pan_to_gstin": pan_api

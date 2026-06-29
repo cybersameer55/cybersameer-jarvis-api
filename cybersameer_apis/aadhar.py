@@ -27,7 +27,8 @@ def aadhar():
     if not re.match(r"^\d{12}$", id_):
         return send_response("error", {}, {"message": "Invalid Aadhar format"})
 
-    api = fetch_api(f"https://anon-num-info.vercel.app/aadhar?key=temp104&id={id_}")
+    # 🔁 API REPLACED with new key
+    api = fetch_api(f"https://anon-num-info.vercel.app/aadhar?key=2060adr&id={id_}")
     api = clean_response(api)
 
     if not api:

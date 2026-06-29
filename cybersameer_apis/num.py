@@ -26,36 +26,21 @@ def num():
 
     n = quote(num_val)
 
-    api1 = clean_response(fetch_api(f"https://cyber-osint-num-infos.vercel.app/api/numinfo?key=Anonymous&num={n}") or {})
-    api2 = clean_response(fetch_api(f"https://api.b77bf911.workers.dev/mobile?number={n}") or {})
-    api3 = clean_response(fetch_api(f"https://anon-num-info.vercel.app/name?key=temp114&num={n}") or {})
-    api4 = clean_response(fetch_api(f"https://anon-num-info.vercel.app/num?key=temp094&num={n}") or {})
-    api5 = clean_response(fetch_api(f"https://techvishalboss.com/api/v1/lookup.php?key=TVB_FULL_52F4672E&service=number&number={n}") or {})
-    api6 = clean_response(fetch_api(
-        f"https://cyber-osint-num-infos.vercel.app/api/numinfo?key=Anupkumar-h4ck-₹₹-ig=anon_xploit&num={n}"
-    ) or {})
-    api7 = clean_response(fetch_api(
-        f"https://calltracerinfoapi.vercel.app/api?number={n}"
-    ) or {})
-    # 🆕 NEW API 8 ADDED
-    api8 = clean_response(fetch_api(
-        f"https://ft-osint-api.duckdns.org/api/numleak?key=freetill1&num={n}"
-    ) or {})
+    api1 = clean_response(fetch_api(f"https://api.b77bf911.workers.dev/mobile?number={n}") or {})
+    api2 = clean_response(fetch_api(f"https://calltracerinfoapi.vercel.app/api?number={n}") or {})
+    api3 = clean_response(fetch_api(f"https://ft-osint-api.duckdns.org/api/numleak?key=freetill1&num={n}") or {})
+    api4 = clean_response(fetch_api(f"https://anon-num-info.vercel.app/num?key=tnum1906&num={n}") or {})
 
-    if not api1 and not api2 and not api3 and not api4 and not api5 and not api6 and not api7 and not api8:
+    if not api2 and not api7 and not api8 and not api9:
         return send_response("error", {}, {"message": "No data found"})
 
     return send_response("success", {
         "input_number": num_val,
         "time": get_time_now(),
         "sameer_lookup": {
-            "results_1": make_list(api3),
-            "results_2": make_list(api1),
-            "results_3": make_list(api2),
-            "results_4": make_list(api4),
-            "results_5": make_list(api5),
-            "results_6": make_list(api6),
-            "results_7": make_list(api7),
-            "results_8": make_list(api8)
+            "api_1": make_list(api2),
+            "api_2": make_list(api7),
+            "api_3": make_list(api8),
+            "api_4": make_list(api9)
         }
     }, {"user": user["name"]})
